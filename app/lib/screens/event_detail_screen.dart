@@ -11,6 +11,18 @@ import '../widgets/location_picker.dart';
 import '../widgets/severity_badge.dart' show StatusColors;
 import 'manage_vocab_screen.dart';
 
+DateTime? snapEndToStart({
+  required DateTime? currentEnd,
+  required bool startTouched,
+  required bool endTouched,
+  required DateTime newStart,
+}) {
+  if (currentEnd != null && !startTouched && !endTouched) {
+    return newStart;
+  }
+  return currentEnd;
+}
+
 /// Event Detail (SPEC §4.4): edit all fields; chips from user vocab; shows the computed
 /// enrichment. Start/end time and the recorded location are editable so an entry can be recreated
 /// after the fact (review item #4). Saving re-enqueues enrichment (date/location may have changed).
@@ -33,6 +45,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   DateTime _startedAt = DateTime.now();
   DateTime? _endedAt;
+  bool _startTouched = false;
+  bool _endTouched = false;
   double? _geoLat;
   double? _geoLon;
   String? _geoLabel;
@@ -192,9 +206,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
     setState(() {
       if (isStart) {
+        _endedAt = snapEndToStart(
+          currentEnd: _endedAt,
+          startTouched: _startTouched,
+          endTouched: _endTouched,
+          newStart: picked,
+        );
         _startedAt = picked;
+        _startTouched = true;
       } else {
         _endedAt = picked;
+        _endTouched = true;
       }
     });
   }
@@ -266,7 +288,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             label: 'Ended',
             value: _endedAt,
             onTap: () => _pickDateTime(isStart: false),
-            onClear: _endedAt == null ? null : () => setState(() => _endedAt = null),
+            onClear: _endedAt == null ? null : () => setState(() { _endedAt = null; _endTouched = true; }),
             emptyHint: 'ongoing — tap to set',
           ),
           _locationTile(),
